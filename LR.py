@@ -66,9 +66,13 @@ def analytical_solution(feature_matrix, targets, C=0.0):
     '''
     Arguments:
     feature_matrix: numpy array of shape m x n
-    weights: numpy array of shape m x 1
+    targets: numpy array of shape m x 1
     '''
-
+    temp=np.multiply(np.transpose(feature_matrix),feature_matrix)
+    temp_inv=np.linalg.inv(temp)
+    temp2=np.multiply(np.transpose(feature_matrix),targets)
+    analytical_weights=np.multiply(temp_inv,temp2)
+    return analytical_weights
     raise NotImplementedError 
 
 def get_predictions(feature_matrix, weights):
@@ -105,7 +109,7 @@ def mse_loss(feature_matrix, weights, targets):
         x_i=np.transpose(np.array(feature_matrix[i]))
         y_i=targets[i]
         loss+=pow(np.multiply(np.transpose(weights),x_i)-y_i,2)
-    return loss
+    return loss/data_length
     raise NotImplementedError
 
 def l2_regularizer(weights):
@@ -135,7 +139,8 @@ def loss_fn(feature_matrix, weights, targets, C=0.0):
     C: weight for regularization penalty
     return value: float (scalar)
     '''
-
+    loss=0.0
+    loss=mse_loss(feature_matrix,weights,targets)+C*l2_regularizer(weights)
     raise NotImplementedError
 
 def compute_gradients(feature_matrix, weights, targets, C=0.0):
@@ -152,6 +157,7 @@ def compute_gradients(feature_matrix, weights, targets, C=0.0):
     C: weight for regularization penalty
     return value: numpy array
     '''
+
     raise NotImplementedError
 
 def sample_random_batch(feature_matrix, targets, batch_size):
@@ -197,7 +203,8 @@ def update_weights(weights, gradients, lr):
     # gradients: numpy matrix of shape nx1
     # lr: learning rate
     '''    
-
+    updated_weights=np.subtract(weights,gradients*lr)
+    return updated_weights
     raise NotImplementedError
 
 def early_stopping(arg_1=None, arg_2=None, arg_3=None, arg_n=None):
