@@ -1,19 +1,39 @@
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
-
 np.random.seed(42)
 
 
 class Scaler():
     # hint: https://machinelearningmastery.com/standardscaler-and-minmaxscaler-transforms-in-python/
     def __init__(self):
-        raise NotImplementedError
-    def __call__(self,features, is_train=False):
-        raise NotImplementedError
-
+        self.mean=[]
+        self.standard_deviation=[]
+        self.min_value=[]
+        self.max_value=[]
+        self.df_min_value=None
+        self.df_max_value=None
+    def __call__(self,df, is_train=False):
+        result = df.copy()
+        if is_train:
+            for feature_name in df.columns:
+                min_value=df[feature_name].min()
+                max_value=df[feature_name].max()
+                self.min_value.append(min_value)
+                self.max_value.append(max_value)
+                result[feature_name]=(df[feature_name]-min_value)/(max_value-min_value)
+        else:
+            i=0
+            for feature_name in df.columns:
+                min_value=self.min_value[i]
+                max_value=self.max_value[i]
+                result[feature_name]=(df[feature_name]-min_value)/(max_value-min_value)
+                i+=1
+        return result
 
 def get_features(csv_path,is_train=False,scaler=None):
     '''
@@ -38,8 +58,22 @@ def get_features(csv_path,is_train=False,scaler=None):
         * https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
         * https://www.geeksforgeeks.org/python-read-csv-using-pandas-read_csv/
     '''
+    data_file=pd.read_csv(csv_path)
+    data_file=data_file.drop(columns=[' shares'])
+    data_file=scaler(data_file,is_train)
+    data_file.apply(lambda x:x*x,axis=1)
+    feature_matrix=data_file.to_numpy()
 
+    print(feature_matrix.shape)
+    return feature_matrix
     raise NotImplementedError
+
+def get_features_test(csv_path,is_train=False,scaler=None):
+    data_file=pd.read_csv(csv_path)
+    data_file=scaler(data_file,is_train)
+    data_file.apply(lambda x:x*x,axis=1)
+    feature_matrix=data_file.to_numpy()
+    return feature_matrix
 
 def get_targets(csv_path):
     '''
@@ -48,12 +82,10 @@ def get_targets(csv_path):
     return a numpy array of shape m x 1
     m is number of examples
     '''
-    data_file=pd.read_csv(csv_path)
-    target=data_file.iloc[:,61].value
-    target=np.array(target).reshape(-1,1)
+    data_file=pd.read_csv(csv_path,usecols=[' shares'])
+    target=data_file.to_numpy()
     return target
     raise NotImplementedError
-     
 
 def analytical_solution(feature_matrix, targets, C=0.0):
     '''
@@ -68,12 +100,16 @@ def analytical_solution(feature_matrix, targets, C=0.0):
     feature_matrix: numpy array of shape m x n
     targets: numpy array of shape m x 1
     '''
-    temp=np.multiply(np.transpose(feature_matrix),feature_matrix)
+    m,n=feature_matrix.shape
+    I=np.identity(n)
+    feature_matrix_transpose=np.transpose(feature_matrix)
+    temp=np.dot(feature_matrix_transpose,feature_matrix)
+    t=C*m
+    temp=np.add(temp,t*I)
     temp_inv=np.linalg.inv(temp)
-    temp2=np.multiply(np.transpose(feature_matrix),targets)
-    analytical_weights=np.multiply(temp_inv,temp2)
+    temp2=np.dot(feature_matrix_transpose,targets)
+    analytical_weights=np.dot(temp_inv,temp2)
     return analytical_weights
-    raise NotImplementedError 
 
 def get_predictions(feature_matrix, weights):
     '''
@@ -87,7 +123,8 @@ def get_predictions(feature_matrix, weights):
     feature_matrix: numpy array of shape m x n
     weights: numpy array of shape n x 1
     '''
-
+    predictions=np.dot(feature_matrix,weights)
+    return predictions
     raise NotImplementedError
 
 def mse_loss(feature_matrix, weights, targets):
@@ -105,10 +142,10 @@ def mse_loss(feature_matrix, weights, targets):
     '''
     data_length,dimension=feature_matrix.shape
     loss=0.0
-    for i in range(data_length):
-        x_i=np.transpose(np.array(feature_matrix[i]))
-        y_i=targets[i]
-        loss+=pow(np.multiply(np.transpose(weights),x_i)-y_i,2)
+    Y_pred=get_predictions(feature_matrix,weights)
+    Y_true=targets
+    temp=np.subtract(Y_pred,Y_true)
+    loss=np.sum(np.square(temp))
     return loss/data_length
     raise NotImplementedError
 
@@ -123,6 +160,8 @@ def l2_regularizer(weights):
     Arguments
     weights: numpy array of shape n x 1
     '''
+    result=int(pow(np.linalg.norm(weights),2))
+    return result
     raise NotImplementedError
 
 def loss_fn(feature_matrix, weights, targets, C=0.0):
@@ -141,9 +180,10 @@ def loss_fn(feature_matrix, weights, targets, C=0.0):
     '''
     loss=0.0
     loss=mse_loss(feature_matrix,weights,targets)+C*l2_regularizer(weights)
+    return loss
     raise NotImplementedError
 
-def compute_gradients(feature_matrix, weights, targets, C=0.0):
+def compute_gradients(feature_matrix, weights, targets, C=1e-8):
     '''
     Description:
     compute gradient of weights w.r.t. the loss_fn function implemented above
@@ -157,7 +197,13 @@ def compute_gradients(feature_matrix, weights, targets, C=0.0):
     C: weight for regularization penalty
     return value: numpy array
     '''
-
+    n,d=feature_matrix.shape
+    h=get_predictions(feature_matrix,weights)
+    grad=np.dot(np.transpose(feature_matrix),np.subtract(h,targets))
+    grad*=(2.0/n)
+    t=2.0*C
+    grad+=weights*t
+    return grad
     raise NotImplementedError
 
 def sample_random_batch(feature_matrix, targets, batch_size):
@@ -175,8 +221,15 @@ def sample_random_batch(feature_matrix, targets, batch_size):
     targets: numpy array of shape m x 1
     batch_size: int
     '''    
-    raise NotImplementedError
-    
+    row,col=feature_matrix.shape
+    indexes=np.random.choice(row,batch_size,replace=False)
+    data=np.hstack((feature_matrix,targets))
+    sampled_feature_matrix=data[indexes,0:col]
+    sampled_target_matrix=data[indexes,col]
+    sampled_target_matrix=sampled_target_matrix.reshape(-1,1)
+    return sampled_feature_matrix,sampled_target_matrix
+        
+
 def initialize_weights(n):
     '''
     Description:
@@ -188,6 +241,9 @@ def initialize_weights(n):
     Arguments
     n: int
     '''
+    weights=[0]*n
+    weights=np.array(weights).reshape(-1,1)
+    return weights
     raise NotImplementedError
 
 def update_weights(weights, gradients, lr):
@@ -207,17 +263,11 @@ def update_weights(weights, gradients, lr):
     return updated_weights
     raise NotImplementedError
 
-def early_stopping(arg_1=None, arg_2=None, arg_3=None, arg_n=None):
-    # allowed to modify argument list as per your need
-    # return True or False
-    raise NotImplementedError
-    
-
 def do_gradient_descent(train_feature_matrix,  
                         train_targets, 
                         dev_feature_matrix,
                         dev_targets,
-                        lr=1.0,
+                        lr=0.1,
                         C=0.0,
                         batch_size=32,
                         max_steps=10000,
@@ -226,10 +276,10 @@ def do_gradient_descent(train_feature_matrix,
     feel free to significantly modify the body of this function as per your needs.
     ** However **, you ought to make use of compute_gradients and update_weights function defined above
     return your best possible estimate of LR weights
-
     a sample code is as follows -- 
     '''
-    weights = initialize_weights(n)
+    data_length,dimension=train_feature_matrix.shape
+    weights = initialize_weights(dimension)
     dev_loss = mse_loss(dev_feature_matrix, weights, dev_targets)
     train_loss = mse_loss(train_feature_matrix, weights, train_targets)
 
@@ -253,7 +303,6 @@ def do_gradient_descent(train_feature_matrix,
         '''
         implement early stopping etc. to improve performance.
         '''
-
     return weights
 
 def do_evaluation(feature_matrix, targets, weights):
@@ -262,32 +311,35 @@ def do_evaluation(feature_matrix, targets, weights):
     loss =  mse_loss(feature_matrix, weights, targets)
     return loss
 
-if __name__ == '__main__':
+def save_csv_file(csv_path,test_targets):
+    header=['shares']
+    df=pd.DataFrame(data=test_targets,columns=header)
+    df.index.name='instance_id'
+    df.to_csv(csv_path)
+if __name__ == "__main__":
     scaler = Scaler() #use of scaler is optional
-    train_features, train_targets = get_features('data/train.csv',True,scaler), get_targets('data/train.csv')
-    dev_features, dev_targets = get_features('data/dev.csv',False,scaler), get_targets('data/dev.csv')
-
-    a_solution = analytical_solution(train_features, train_targets, C=1e-8)
+    train_features, train_targets = get_features('train.csv',True,scaler), get_targets('train.csv')
+    dev_features, dev_targets = get_features('dev.csv',False,scaler), get_targets('dev.csv')
+    a_solution = analytical_solution(train_features, train_targets, C=1e-9)
     print('evaluating analytical_solution...')
     dev_loss=do_evaluation(dev_features, dev_targets, a_solution)
     train_loss=do_evaluation(train_features, train_targets, a_solution)
     print('analytical_solution \t train loss: {}, dev_loss: {} '.format(train_loss, dev_loss))
-
+    test_feature= get_features_test('test.csv',False,scaler)
+    test_predictions=get_predictions(test_feature,a_solution)
+    save_csv_file('my_predictions.csv',test_predictions)
     print('training LR using gradient descent...')
     gradient_descent_soln = do_gradient_descent(train_features, 
-                        train_targets, 
-                        dev_features,
-                        dev_targets,
-                        lr=1.0,
-                        C=0.0,
-                        batch_size=32,
-                        max_steps=2000000,
-                        eval_steps=5)
+                            train_targets, 
+                            dev_features,
+                            dev_targets,
+                            lr=0.12,
+                            C=1e-11,
+                            batch_size=32,
+                            max_steps=2000000,
+                            eval_steps=10000)
 
     print('evaluating iterative_solution...')
     dev_loss=do_evaluation(dev_features, dev_targets, gradient_descent_soln)
     train_loss=do_evaluation(train_features, train_targets, gradient_descent_soln)
-    print('gradient_descent_soln \t train loss: {}, dev_loss: {} '.format(train_loss, dev_loss))
-    
-
-
+    print('gradient_descent_soln \t train loss: {}, dev_loss: {} '.format(train_loss, dev_loss))    
