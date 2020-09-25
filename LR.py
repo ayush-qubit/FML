@@ -63,8 +63,6 @@ def get_features(csv_path,is_train=False,scaler=None):
     data_file=scaler(data_file,is_train)
     data_file.apply(lambda x:x*x,axis=1)
     feature_matrix=data_file.to_numpy()
-
-    print(feature_matrix.shape)
     return feature_matrix
     raise NotImplementedError
 
@@ -316,7 +314,7 @@ def save_csv_file(csv_path,test_targets):
     df=pd.DataFrame(data=test_targets,columns=header)
     df.index.name='instance_id'
     df.to_csv(csv_path)
-    
+
 if __name__ == "__main__":
     scaler = Scaler() #use of scaler is optional
     train_features, train_targets = get_features('train.csv',True,scaler), get_targets('train.csv')
