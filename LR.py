@@ -324,9 +324,9 @@ if __name__ == "__main__":
     dev_loss=do_evaluation(dev_features, dev_targets, a_solution)
     train_loss=do_evaluation(train_features, train_targets, a_solution)
     print('analytical_solution \t train loss: {}, dev_loss: {} '.format(train_loss, dev_loss))
-    test_feature= get_features_test('test.csv',False,scaler)
+    '''test_feature= get_features_test('test.csv',False,scaler)
     test_predictions=get_predictions(test_feature,a_solution)
-    save_csv_file('my_predictions.csv',test_predictions)
+    save_csv_file('my_predictions.csv',test_predictions)'''
     print('training LR using gradient descent...')
     gradient_descent_soln = do_gradient_descent(train_features, 
                             train_targets, 
