@@ -241,7 +241,8 @@ def initialize_weights(n):
     Arguments
     n: int
     '''
-    weights=[0]*n
+    weights=np.random.rand(n)
+    #weights=[0]*n
     weights=np.array(weights).reshape(-1,1)
     return weights
     raise NotImplementedError
@@ -334,7 +335,7 @@ if __name__ == "__main__":
                             dev_features,
                             dev_targets,
                             lr=0.12,
-                            C=1e-11,
+                            C=1e-9,
                             batch_size=32,
                             max_steps=2000000,
                             eval_steps=10000)
