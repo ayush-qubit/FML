@@ -316,6 +316,7 @@ def save_csv_file(csv_path,test_targets):
     df=pd.DataFrame(data=test_targets,columns=header)
     df.index.name='instance_id'
     df.to_csv(csv_path)
+    
 if __name__ == "__main__":
     scaler = Scaler() #use of scaler is optional
     train_features, train_targets = get_features('train.csv',True,scaler), get_targets('train.csv')
