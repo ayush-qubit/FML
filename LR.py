@@ -223,9 +223,8 @@ def sample_random_batch(feature_matrix, targets, batch_size):
     '''    
     row,col=feature_matrix.shape
     indexes=np.random.choice(row,batch_size,replace=False)
-    data=np.hstack((feature_matrix,targets))
-    sampled_feature_matrix=data[indexes,0:col]
-    sampled_target_matrix=data[indexes,col]
+    sampled_feature_matrix=feature_matrix[indexes,0:col]
+    sampled_target_matrix=targets[indexes,0]
     sampled_target_matrix=sampled_target_matrix.reshape(-1,1)
     return sampled_feature_matrix,sampled_target_matrix
         
