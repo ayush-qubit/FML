@@ -239,7 +239,6 @@ def initialize_weights(n):
     n: int
     '''
     weights=np.random.rand(n)
-    #weights=[0]*n
     weights=np.array(weights).reshape(-1,1)
     return weights
     raise NotImplementedError
