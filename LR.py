@@ -198,7 +198,7 @@ def compute_gradients(feature_matrix, weights, targets, C=1e-8):
     n,d=feature_matrix.shape
     h=get_predictions(feature_matrix,weights)
     grad=np.dot(np.transpose(feature_matrix),np.subtract(h,targets))
-    grad*=(2.0/n)
+    grad=grad*(2.0/n)
     t=2.0*C
     grad+=weights*t
     return grad
